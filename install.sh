@@ -87,29 +87,63 @@ cp README.md "$INSTALL_DIR/"
 
 cd "$INSTALL_DIR"
 
-# Step 6: Create virtual environment
-print_status "Creating Python virtual environment..."
-python3 -m venv motd-env
-source motd-env/bin/activate
+# Step 6: Try to create virtual environment, fallback to system install
+print_status "Setting up Python environment..."
 
-# Step 7: Install Python dependencies
-print_status "Installing Python dependencies..."
-pip install --upgrade pip
-pip install -r requirements.txt
+# Check if virtual environment creation is possible
+if python3 -m venv --help > /dev/null 2>&1; then
+    print_status "Creating Python virtual environment..."
+    python3 -m venv motd-env
+    source motd-env/bin/activate
+    
+    # Install Python dependencies
+    print_status "Installing Python dependencies in virtual environment..."
+    pip install --upgrade pip
+    pip install -r requirements.txt
+    
+    # Test if installation was successful
+    if python -c "import rich, psutil, pyfiglet, requests, distro" 2>/dev/null; then
+        print_success "Virtual environment setup successful!"
+        MOTD_COMMAND="$INSTALL_DIR/motd-env/bin/python $INSTALL_DIR/motd.dynamic"
+        USE_VENV=true
+    else
+        print_warning "Virtual environment setup failed, falling back to system Python..."
+        USE_VENV=false
+    fi
+else
+    print_warning "Virtual environment not available, using system Python..."
+    USE_VENV=false
+fi
 
-# Step 8: Make executable
+# Fallback to system Python if virtual environment failed
+if [ "$USE_VENV" = false ]; then
+    print_status "Installing Python dependencies system-wide..."
+    sudo pip3 install --upgrade pip
+    sudo pip3 install -r requirements.txt
+    
+    # Test system installation
+    if python3 -c "import rich, psutil, pyfiglet, requests, distro" 2>/dev/null; then
+        print_success "System Python setup successful!"
+        MOTD_COMMAND="python3 $INSTALL_DIR/motd.dynamic"
+    else
+        print_error "Failed to install Python dependencies. Please check your Python installation."
+        exit 1
+    fi
+fi
+
+# Step 7: Make executable
 chmod +x motd.dynamic
 
-# Step 9: Test installation
+# Step 8: Test installation
 print_status "Testing MOTD installation..."
-if ./motd.dynamic; then
+if $MOTD_COMMAND; then
     print_success "MOTD test successful!"
 else
     print_error "MOTD test failed. Please check the installation."
     exit 1
 fi
 
-# Step 10: Setup auto-display options
+# Step 9: Setup auto-display options
 echo
 print_status "Choose how you want to display the MOTD:"
 echo "1) System-wide (all users)"
@@ -118,8 +152,6 @@ echo "3) SSH login only"
 echo "4) Manual setup (skip auto-setup)"
 read -p "Enter your choice (1-4): " -n 1 -r
 echo
-
-MOTD_COMMAND="$INSTALL_DIR/motd-env/bin/python $INSTALL_DIR/motd.dynamic"
 
 case $REPLY in
     1)
@@ -171,14 +203,21 @@ EOF
         ;;
 esac
 
-# Step 11: Configuration instructions
+# Step 10: Configuration instructions
 echo
 print_success "Installation completed successfully!"
 echo
 print_status "Configuration:"
 echo "  - Edit $INSTALL_DIR/config.json to customize the MOTD"
 echo "  - Banner text, colors, and features can all be configured"
-echo "  - Run '$INSTALL_DIR/motd.dynamic' to test changes"
+echo "  - Run '$MOTD_COMMAND' to test changes"
+echo
+print_status "Environment used:"
+if [ "$USE_VENV" = true ]; then
+    echo "  - Virtual environment: $INSTALL_DIR/motd-env/"
+else
+    echo "  - System Python installation"
+fi
 echo
 print_status "Next steps:"
 echo "  - Customize your banner text in config.json"
