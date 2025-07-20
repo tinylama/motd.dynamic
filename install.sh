@@ -151,17 +151,28 @@ cp README.md "$INSTALL_DIR/"
 
 cd "$INSTALL_DIR"
 
-# Step 6: Install Python dependencies system-wide
-print_status "Installing Python dependencies system-wide..."
-sudo pip3 install --upgrade pip
-sudo pip3 install -r requirements.txt
+# Step 6: Install Python dependencies in virtual environment
+print_status "Setting up Python virtual environment..."
 
-# Test system installation
-if python3 -c "import rich, psutil, pyfiglet, requests, distro" 2>/dev/null; then
-    print_success "System Python setup successful!"
-    MOTD_COMMAND="python3 $INSTALL_DIR/motd.dynamic"
+# Ensure python3-venv is installed
+sudo apt install -y python3-venv python3-full
+
+# Create virtual environment
+print_status "Creating Python virtual environment..."
+python3 -m venv motd-env
+
+# Activate virtual environment and install dependencies
+print_status "Installing Python dependencies in virtual environment..."
+source motd-env/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Test virtual environment installation
+if python -c "import rich, psutil, pyfiglet, requests, distro" 2>/dev/null; then
+    print_success "Virtual environment setup successful!"
+    MOTD_COMMAND="$INSTALL_DIR/motd-env/bin/python $INSTALL_DIR/motd.dynamic"
 else
-    print_error "Failed to install Python dependencies. Please check your Python installation."
+    print_error "Failed to install Python dependencies in virtual environment."
     exit 1
 fi
 
@@ -210,7 +221,7 @@ echo "  - Banner text, colors, and features can all be configured"
 echo "  - Run '$MOTD_COMMAND' to test changes"
 echo
 print_status "Environment used:"
-echo "  - System Python installation"
+echo "  - Virtual environment: $INSTALL_DIR/motd-env/"
 echo
 print_status "Next steps:"
 echo "  - Customize your banner text in config.json"
