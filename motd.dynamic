@@ -478,7 +478,7 @@ class MOTDRenderer:
         table.add_row("📊 CPU Usage", Text(cpu_usage, style=cpu_color))
         table.add_row("🧠 Memory", memory_info)
         table.add_row("📈 Memory Usage", Text(memory_usage, style=mem_color))
-        table.add_row("⚖️  Load Average", load_avg)
+        table.add_row("⚖️ Load Average", load_avg)
         table.add_row("🔄 Processes", processes)
         table.add_row("👥 Users", users)
         
@@ -577,7 +577,7 @@ class MOTDRenderer:
                 else:
                     color = config.color_ok
                     status = "All services OK"
-                table.add_row("⚙️  Services", Text(status, style=color))
+                table.add_row("⚙️ Services", Text(status, style=color))
                 rows_added += 1
         
         # SSL certificates
@@ -611,7 +611,147 @@ class MOTDRenderer:
             "Experience is the name everyone gives to their mistakes. - Oscar Wilde",
             "In order to be irreplaceable, one must always be different. - Coco Chanel",
             "Java is to JavaScript what car is to Carpet. - Chris Heilmann",
-            "Knowledge is power. - Francis Bacon"
+            "Knowledge is power. - Francis Bacon",
+            "The only way to do great work is to love what you do. - Steve Jobs",
+            "Innovation distinguishes between a leader and a follower. - Steve Jobs",
+            "Stay hungry, stay foolish. - Steve Jobs",
+            "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
+            "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill",
+            "The only limit to our realization of tomorrow is our doubts of today. - Franklin D. Roosevelt",
+            "It does not matter how slowly you go as long as you do not stop. - Confucius",
+            "The journey of a thousand miles begins with one step. - Lao Tzu",
+            "What you get by achieving your goals is not as important as what you become by achieving your goals. - Zig Ziglar",
+            "The mind is everything. What you think you become. - Buddha",
+            "Quality is not an act, it is a habit. - Aristotle",
+            "The only true wisdom is in knowing you know nothing. - Socrates",
+            "Be the change that you wish to see in the world. - Mahatma Gandhi",
+            "In the middle of difficulty lies opportunity. - Albert Einstein",
+            "Life is what happens when you're busy making other plans. - John Lennon",
+            "The way to get started is to quit talking and begin doing. - Walt Disney",
+            "All our dreams can come true, if we have the courage to pursue them. - Walt Disney",
+            "It's kind of fun to do the impossible. - Walt Disney",
+            "The more you know, the more you realize you don't know. - Aristotle",
+            "Simplicity is the ultimate sophistication. - Leonardo da Vinci",
+            "Learning never exhausts the mind. - Leonardo da Vinci",
+            "The greatest glory in living lies not in never falling, but in rising every time we fall. - Nelson Mandela",
+            "Education is the most powerful weapon which you can use to change the world. - Nelson Mandela",
+            "I have not failed. I've just found 10,000 ways that won't work. - Thomas Edison",
+            "Genius is one percent inspiration and ninety-nine percent perspiration. - Thomas Edison",
+            "The only place where success comes before work is in the dictionary. - Vidal Sassoon",
+            "Don't watch the clock; do what it does. Keep going. - Sam Levenson",
+            "The best revenge is massive success. - Frank Sinatra",
+            "I did it my way. - Frank Sinatra",
+            "The only impossible journey is the one you never begin. - Tony Robbins",
+            "Believe you can and you're halfway there. - Theodore Roosevelt",
+            "Do what you can, with what you have, where you are. - Theodore Roosevelt",
+            "The man who has no imagination has no wings. - Muhammad Ali",
+            "I am the greatest, I said that even before I knew I was. - Muhammad Ali",
+            "Float like a butterfly, sting like a bee. - Muhammad Ali",
+            "The future is not something we enter. The future is something we create. - Leonard I. Sweet",
+            "Creativity is intelligence having fun. - Albert Einstein",
+            "Imagination is more important than knowledge. - Albert Einstein",
+            "Try not to become a person of success, but rather try to become a person of value. - Albert Einstein",
+            "Logic will get you from A to B. Imagination will take you everywhere. - Albert Einstein",
+            "The important thing is not to stop questioning. - Albert Einstein",
+            "Anyone who has never made a mistake has never tried anything new. - Albert Einstein",
+            "The difference between stupidity and genius is that genius has its limits. - Albert Einstein",
+            "I have no special talent. I am only passionately curious. - Albert Einstein",
+            "The world is a dangerous place to live; not because of the people who are evil, but because of the people who don't do anything about it. - Albert Einstein",
+            "Peace cannot be kept by force; it can only be achieved by understanding. - Albert Einstein",
+            "The only source of knowledge is experience. - Albert Einstein",
+            "Look deep into nature, and then you will understand everything better. - Albert Einstein",
+            "A person who never made a mistake never tried anything new. - Albert Einstein",
+            "The value of a man should be seen in what he gives and not in what he is able to receive. - Albert Einstein",
+            "Great spirits have always encountered violent opposition from mediocre minds. - Albert Einstein",
+            "The true sign of intelligence is not knowledge but imagination. - Albert Einstein",
+            "Weakness of attitude becomes weakness of character. - Albert Einstein",
+            "It is the supreme art of the teacher to awaken joy in creative expression and knowledge. - Albert Einstein",
+            "The only way to escape the corruptible effect of praise is to go on working. - Albert Einstein",
+            "A table, a chair, a bowl of fruit and a violin; what else does a man need to be happy? - Albert Einstein",
+            "The most incomprehensible thing about the world is that it is comprehensible. - Albert Einstein",
+            "The most beautiful experience we can have is the mysterious. - Albert Einstein",
+            "The important thing is not to stop questioning. Curiosity has its own reason for existence. - Albert Einstein",
+            "I never think of the future. It comes soon enough. - Albert Einstein",
+            "The only real valuable thing is intuition. - Albert Einstein",
+            "A person starts to live when he can live outside himself. - Albert Einstein",
+            "I am enough of an artist to draw freely upon my imagination. - Albert Einstein",
+            "The most difficult thing to understand in the world is the income tax. - Albert Einstein",
+            "The world is not dangerous because of those who do harm but because of those who look at it without doing anything. - Albert Einstein",
+            "The only thing that interferes with my learning is my education. - Albert Einstein",
+            "The distinction between the past, present and future is only a stubbornly persistent illusion. - Albert Einstein",
+            "The human spirit must prevail over technology. - Albert Einstein",
+            "The only thing more expensive than education is ignorance. - Benjamin Franklin",
+            "Tell me and I forget. Teach me and I remember. Involve me and I learn. - Benjamin Franklin",
+            "An investment in knowledge pays the best interest. - Benjamin Franklin",
+            "Well done is better than well said. - Benjamin Franklin",
+            "Energy and persistence conquer all things. - Benjamin Franklin",
+            "Either write something worth reading or do something worth writing. - Benjamin Franklin",
+            "By failing to prepare, you are preparing to fail. - Benjamin Franklin",
+            "Guests, like fish, begin to smell after three days. - Benjamin Franklin",
+            "A place for everything, everything in its place. - Benjamin Franklin",
+            "Early to bed and early to rise makes a man healthy, wealthy and wise. - Benjamin Franklin",
+            "He that can have patience can have what he will. - Benjamin Franklin",
+            "Lost time is never found again. - Benjamin Franklin",
+            "Never leave that till tomorrow which you can do today. - Benjamin Franklin",
+            "One today is worth two tomorrows. - Benjamin Franklin",
+            "The doors of wisdom are never shut. - Benjamin Franklin",
+            "There are no gains without pains. - Benjamin Franklin",
+            "Wealth is not his that has it, but his that enjoys it. - Benjamin Franklin",
+            "When in doubt, don't. - Benjamin Franklin",
+            "Where there's a will, there's a way. - Benjamin Franklin",
+            "Wise men don't need advice. Fools won't take it. - Benjamin Franklin",
+            "You may delay, but time will not. - Benjamin Franklin",
+            "A good conscience is a continual Christmas. - Benjamin Franklin",
+            "A house is not a home unless it contains food and fire for the mind as well as the body. - Benjamin Franklin",
+            "A man wrapped up in himself makes a very small bundle. - Benjamin Franklin",
+            "A penny saved is a penny earned. - Benjamin Franklin",
+            "A place for everything, everything in its place. - Benjamin Franklin",
+            "A small leak will sink a great ship. - Benjamin Franklin",
+            "A true friend is the best possession. - Benjamin Franklin",
+            "Adventure is not outside man; it is within. - George Eliot",
+            "It is never too late to be what you might have been. - George Eliot",
+            "What do we live for, if it is not to make life less difficult for each other? - George Eliot",
+            "The golden moments in the stream of life rush past us, and we see nothing but sand; the angels come to visit us, and we only know them when they are gone. - George Eliot",
+            "Blessed is the influence of one true, loving human soul on another. - George Eliot",
+            "Our deeds determine us, as much as we determine our deeds. - George Eliot",
+            "The beginning of compunction is the beginning of a new life. - George Eliot",
+            "It seems to me we can never give up longing and wishing while we are thoroughly alive. - George Eliot",
+            "What makes life dreary is the want of motive. - George Eliot",
+            "The important work of moving the world forward does not wait to be done by perfect men. - George Eliot",
+            "The strongest principle of growth lies in human choice. - George Eliot",
+            "We long for an affection altogether ignorant of our faults. Heaven has accorded this to us in the uncritical canine attachment. - George Eliot",
+            "The years between fifty and seventy are the hardest. You are always being asked to do things, and yet you are not decrepit enough to turn them down. - T.S. Eliot",
+            "Only those who will risk going too far can possibly find out how far one can go. - T.S. Eliot",
+            "The very existence of libraries affords the best evidence that we may yet have hope for the future of man. - T.S. Eliot",
+            "Genuine poetry can communicate before it is understood. - T.S. Eliot",
+            "The last temptation is the greatest treason: to do the right deed for the wrong reason. - T.S. Eliot",
+            "Humankind cannot bear very much reality. - T.S. Eliot",
+            "The purpose of literature is to turn blood into ink. - T.S. Eliot",
+            "The most important thing for poets to do is to write as little as possible. - T.S. Eliot",
+            "The progress of an artist is a continual self-sacrifice, a continual extinction of personality. - T.S. Eliot",
+            "The only way of expressing emotion in the form of art is by finding an 'objective correlative'. - T.S. Eliot",
+            "The more perfect the artist, the more completely separate in him will be the man who suffers and the mind which creates. - T.S. Eliot",
+            "The bad poet is usually unconscious where he ought to be conscious, and conscious where he ought to be unconscious. - T.S. Eliot",
+            "The good poet welds his theft into a whole of feeling which is unique, utterly different from that from which it was torn. - T.S. Eliot",
+            "The great poet, in writing himself, writes his time. - T.S. Eliot",
+            "The historical sense involves a perception, not only of the pastness of the past, but of its presence. - T.S. Eliot",
+            "The mind of the poet is the shred of platinum. - T.S. Eliot",
+            "The more perfect the artist, the more completely separate in him will be the man who suffers and the mind which creates. - T.S. Eliot",
+            "The progress of an artist is a continual self-sacrifice, a continual extinction of personality. - T.S. Eliot",
+            "The only way of expressing emotion in the form of art is by finding an 'objective correlative'. - T.S. Eliot",
+            "The bad poet is usually unconscious where he ought to be conscious, and conscious where he ought to be unconscious. - T.S. Eliot",
+            "The good poet welds his theft into a whole of feeling which is unique, utterly different from that from which it was torn. - T.S. Eliot",
+            "The great poet, in writing himself, writes his time. - T.S. Eliot",
+            "The historical sense involves a perception, not only of the pastness of the past, but of its presence. - T.S. Eliot",
+            "The mind of the poet is the shred of platinum. - T.S. Eliot",
+            "The more perfect the artist, the more completely separate in him will be the man who suffers and the mind which creates. - T.S. Eliot",
+            "The progress of an artist is a continual self-sacrifice, a continual extinction of personality. - T.S. Eliot",
+            "The only way of expressing emotion in the form of art is by finding an 'objective correlative'. - T.S. Eliot",
+            "The bad poet is usually unconscious where he ought to be conscious, and conscious where he ought to be unconscious. - T.S. Eliot",
+            "The good poet welds his theft into a whole of feeling which is unique, utterly different from that from which it was torn. - T.S. Eliot",
+            "The great poet, in writing himself, writes his time. - T.S. Eliot",
+            "The historical sense involves a perception, not only of the pastness of the past, but of its presence. - T.S. Eliot",
+            "The mind of the poet is the shred of platinum. - T.S. Eliot"
         ]
         
         import random
@@ -641,7 +781,7 @@ def main():
         
         # System info table
         sys_table = renderer.create_system_info_table()
-        sys_panel = Panel(sys_table, title="🖥️  System Information", 
+        sys_panel = Panel(sys_table, title="🖥️ System Information", 
                          title_align="left", box=box.ROUNDED)
         components.append(sys_panel)
         
@@ -678,10 +818,7 @@ def main():
         
         # Footer
         footer_text = Text()
-        footer_text.append("Generated on ", style="dim")
-        footer_text.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), style="bold cyan")
-        footer_text.append(" | ", style="dim")
-        footer_text.append("Modern MOTD v2.0", style="bold magenta")
+        footer_text.append("MOTD v2.0", style="bold magenta")
         
         console.print(Align.center(footer_text))
         console.print()
