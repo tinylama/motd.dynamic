@@ -21,12 +21,16 @@ import socket
 import subprocess
 import sys
 import time
+import warnings
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
+
+# Suppress deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Third-party imports
 try:
@@ -139,17 +143,18 @@ class SystemInfo:
     def get_system_info() -> str:
         """Get system information."""
         try:
-            # Try to get distribution info
+            # Use modern distro functions instead of deprecated linux_distribution()
             try:
-                dist_info = distro.linux_distribution()
-                dist_name = f"{dist_info[0]} {dist_info[1]}"
+                dist_name = distro.name(pretty=True)
+                dist_version = distro.version()
+                dist_info = f"{dist_name} {dist_version}"
             except:
-                dist_name = platform.system()
+                dist_info = platform.system()
             
             arch = platform.machine()
             kernel = platform.release()
             
-            return f"{dist_name}, {kernel}, {arch}"
+            return f"{dist_info}, {kernel}, {arch}"
         except:
             return "Unknown"
     
@@ -195,27 +200,39 @@ class SystemInfo:
     
     @staticmethod
     def get_disk_info() -> List[Tuple[str, str, float]]:
-        """Get disk usage information."""
+        """Get disk usage information for important mount points only."""
         disk_info = []
+        important_mounts = {'/', '/home', '/var', '/tmp', '/boot', '/boot/efi'}
+        
         try:
             partitions = psutil.disk_partitions()
             for partition in partitions:
+                mount_point = partition.mountpoint
+                
+                # Skip snap mounts and other unimportant ones
+                if any(skip in mount_point for skip in ['/snap/', '/var/lib/', '/var/games', '/var/mail', '/var/spool', '/var/www', '/usr/local']):
+                    continue
+                
+                # Only include important mounts or those with significant usage
                 try:
-                    usage = psutil.disk_usage(partition.mountpoint)
-                    total_gb = usage.total / (1024**3)
-                    used_gb = usage.used / (1024**3)
-                    free_gb = usage.free / (1024**3)
+                    usage = psutil.disk_usage(mount_point)
                     percent = (usage.used / usage.total) * 100
                     
-                    mount_point = partition.mountpoint
-                    usage_str = f"{percent:.1f}% ({used_gb:.1f}G used, {free_gb:.1f}G free of {total_gb:.1f}G)"
-                    
-                    disk_info.append((mount_point, usage_str, percent))
+                    # Include if it's an important mount or has >5% usage
+                    if mount_point in important_mounts or percent > 5:
+                        total_gb = usage.total / (1024**3)
+                        used_gb = usage.used / (1024**3)
+                        free_gb = usage.free / (1024**3)
+                        
+                        usage_str = f"{percent:.1f}% ({used_gb:.1f}G used, {free_gb:.1f}G free of {total_gb:.1f}G)"
+                        disk_info.append((mount_point, usage_str, percent))
                 except:
                     continue
         except:
             pass
         
+        # Sort by usage percentage (highest first)
+        disk_info.sort(key=lambda x: x[2], reverse=True)
         return disk_info
     
     @staticmethod
@@ -494,6 +511,8 @@ class MOTDRenderer:
                 emoji = "📁"
             elif "tmp" in mount_point:
                 emoji = "🗑️"
+            elif "boot" in mount_point:
+                emoji = "🚀"
             
             table.add_row(f"{emoji} {mount_point}", Text(usage_str, style=color))
         
@@ -611,9 +630,6 @@ def main():
     try:
         renderer = MOTDRenderer()
         console = Console(width=config.line_length)
-        
-        # Create layout
-        layout = Layout()
         
         # Create components
         components = []
