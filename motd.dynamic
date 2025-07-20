@@ -77,7 +77,6 @@ class MOTDConfig:
     show_banner: bool = False  # Disabled by default
     show_quote: bool = True
     show_weather: bool = False  # Requires API key
-    show_docker: bool = True
     show_systemd: bool = True
     show_network_speed: bool = True
     show_ssl_certs: bool = True
@@ -304,24 +303,7 @@ class SystemInfo:
 class EnhancedFeatures:
     """Additional modern features."""
     
-    @staticmethod
-    def get_docker_info() -> Optional[Dict[str, str]]:
-        """Get Docker container information."""
-        try:
-            result = subprocess.run(['docker', 'ps', '--format', 'table {{.Names}}\t{{.Status}}'], 
-                                  capture_output=True, text=True, timeout=5)
-            if result.returncode == 0:
-                lines = result.stdout.strip().split('\n')[1:]  # Skip header
-                if lines and lines[0]:  # Check if there are any containers
-                    running = len([l for l in lines if 'Up' in l])
-                    total = len(lines)
-                    return {
-                        "containers": f"{running}/{total} running",
-                        "details": lines[:3]  # Show first 3 containers
-                    }
-        except:
-            pass
-        return None
+
     
     @staticmethod
     def get_systemd_failed() -> Optional[List[str]]:
@@ -552,12 +534,7 @@ class MOTDRenderer:
         
         rows_added = 0
         
-        # Docker info
-        if config.show_docker:
-            docker_info = EnhancedFeatures.get_docker_info()
-            if docker_info:
-                table.add_row("🐳 Docker", docker_info["containers"])
-                rows_added += 1
+
         
         # Package updates
         updates = EnhancedFeatures.get_package_updates()
