@@ -42,14 +42,17 @@ fix_file() {
         sudo cp "$file" "$backup_file"
         print_status "Backup created: $backup_file"
         
-        # Remove problematic MOTD lines that might be causing syntax errors
+        # Remove only the problematic MOTD lines that are causing syntax errors
         if [ "$file" = "/etc/profile" ]; then
-            # Remove lines that might be causing 'done' syntax errors
+            # Remove only the specific MOTD command lines that are malformed
+            sudo sed -i '/^[[:space:]]*\/opt\/motd\.dynamic\/motd-env\/bin\/python/d' "$file"
+            sudo sed -i '/^[[:space:]]*python3.*motd\.dynamic/d' "$file"
+            # Remove any orphaned 'done' statements that might have been created
             sudo sed -i '/^[[:space:]]*done[[:space:]]*$/d' "$file"
-            sudo sed -i '/motd\.dynamic/d' "$file"
         else
-            # Remove problematic MOTD lines from user files
-            sed -i '/motd\.dynamic/d' "$file"
+            # Remove only the specific MOTD command lines from user files
+            sed -i '/^[[:space:]]*\/opt\/motd\.dynamic\/motd-env\/bin\/python/d' "$file"
+            sed -i '/^[[:space:]]*python3.*motd\.dynamic/d' "$file"
         fi
         
         # Test the file for syntax errors
