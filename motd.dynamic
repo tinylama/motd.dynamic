@@ -287,7 +287,7 @@ class SystemInfo:
         """Get system load average."""
         try:
             load1, load5, load15 = os.getloadavg()
-            return f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+            return f"{load1:.2f} {load5:.2f} {load15:.2f}"
         except:
             return "Unknown"
     
@@ -748,6 +748,16 @@ def main():
         renderer = MOTDRenderer()
         console = Console(width=config.line_length)
         
+        # Header with version
+        header_text = Text()
+        header_text.append("Modern MOTD v2.0", style="bold magenta")
+        header_text.append(" | ", style="dim")
+        header_text.append("Generated on ", style="dim")
+        header_text.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), style="bold cyan")
+        
+        console.print(Align.center(header_text))
+        console.print()
+        
         # Create components
         components = []
         
@@ -792,13 +802,6 @@ def main():
         for component in components:
             console.print(component)
             console.print()  # Add spacing
-        
-        # Footer
-        footer_text = Text()
-        footer_text.append("MOTD v2.0", style="bold magenta")
-        
-        console.print(Align.center(footer_text))
-        console.print()
         
     except KeyboardInterrupt:
         console.print("\n👋 MOTD interrupted by user", style="yellow")
