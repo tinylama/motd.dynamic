@@ -74,7 +74,7 @@ class MOTDConfig:
     color_accent: str = "blue"
     
     # Feature toggles
-    show_banner: bool = True
+    show_banner: bool = False  # Disabled by default
     show_quote: bool = True
     show_weather: bool = False  # Requires API key
     show_docker: bool = True
@@ -434,7 +434,7 @@ class MOTDRenderer:
         """Create system information table."""
         table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
         table.add_column("Property", style=config.color_info, width=config.left_col_length)
-        table.add_column("Value", style="white")
+        table.add_column("Value", style="white", width=config.line_length - config.left_col_length - 6)
         
         # Collect system info
         uptime = SystemInfo.get_uptime()
@@ -488,7 +488,7 @@ class MOTDRenderer:
         """Create disk usage table."""
         table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
         table.add_column("Mount Point", style=config.color_info, width=config.left_col_length)
-        table.add_column("Usage", style="white")
+        table.add_column("Usage", style="white", width=config.line_length - config.left_col_length - 6)
         
         disk_info = SystemInfo.get_disk_info()
         
@@ -522,7 +522,7 @@ class MOTDRenderer:
         """Create network information table."""
         table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
         table.add_column("Interface", style=config.color_info, width=config.left_col_length)
-        table.add_column("Address", style="white")
+        table.add_column("Address", style="white", width=config.line_length - config.left_col_length - 6)
         
         network_info = SystemInfo.get_network_info()
         public_ip = SystemInfo.get_public_ip()
@@ -548,7 +548,7 @@ class MOTDRenderer:
         """Create table for enhanced features."""
         table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
         table.add_column("Feature", style=config.color_info, width=config.left_col_length)
-        table.add_column("Status", style="white")
+        table.add_column("Status", style="white", width=config.line_length - config.left_col_length - 6)
         
         rows_added = 0
         
@@ -634,7 +634,7 @@ def main():
         # Create components
         components = []
         
-        # Banner
+        # Banner (disabled by default)
         banner = renderer.create_banner()
         if banner:
             components.append(banner)
@@ -662,7 +662,7 @@ def main():
         # Enhanced features table
         enhanced_table = renderer.create_enhanced_features_table()
         if enhanced_table and enhanced_table.rows:
-            enhanced_panel = Panel(enhanced_table, title="🚀 Enhanced Features", 
+            enhanced_panel = Panel(enhanced_table, title="✨ Enhanced Features", 
                                   title_align="left", box=box.ROUNDED)
             components.append(enhanced_panel)
         
