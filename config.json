@@ -1,0 +1,41 @@
+{
+    "display": {
+        "line_length": 100,
+        "left_col_length": 25
+    },
+    "banner": {
+        "text": "CENTRIL-NAS",
+        "fonts": ["slant", "3d", "big", "block", "doom", "epic"],
+        "justify": "center",
+        "style": "bold cyan"
+    },
+    "colors": {
+        "ok": "green",
+        "warn": "yellow",
+        "critical": "red",
+        "info": "cyan",
+        "header": "magenta",
+        "accent": "blue"
+    },
+    "features": {
+        "show_banner": true,
+        "show_quote": true,
+        "show_weather": false,
+        "show_docker": true,
+        "show_systemd": true,
+        "show_network_speed": true,
+        "show_ssl_certs": true
+    },
+    "thresholds": {
+        "disk_warn": 70,
+        "disk_critical": 85,
+        "memory_warn": 70,
+        "memory_critical": 85,
+        "cpu_warn": 70,
+        "cpu_critical": 85
+    },
+    "external_services": {
+        "weather_api_key": null,
+        "weather_city": "London"
+    }
+} 

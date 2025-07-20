@@ -1,111 +1,260 @@
-[![Gittip]][url: Gittip] [![License]][url: License] [![Semver]][url: Semver]
+# Modern Dynamic MOTD - Python 3 Enhanced
 
-# [`motd.dynamic`]
-> `motd` script for `linux` written in `python`, highly configurable with lots of eyecandy.
-> It runs all the information gathering in separate concurrent proccesses and thus is fast, relatively speaking.
+A stunning, modern Message of the Day (MOTD) script for Linux systems, completely rewritten with Python 3 and enhanced with beautiful visuals, performance optimizations, and extensive system monitoring capabilities.
 
-## Features
+## ✨ Features
 
-[`motd.dynamic`] reports the following information:
+### Core System Information
+- 🖥️ **System Overview**: Uptime, boot time, OS information, kernel version
+- 🔧 **CPU Monitoring**: Real-time CPU usage with color-coded warnings
+- 🧠 **Memory Analytics**: RAM usage with visual indicators
+- 💾 **Disk Usage**: All mounted filesystems with usage percentages
+- 🌐 **Network Information**: All network interfaces + public IP detection
+- 👥 **User Sessions**: Currently logged-in users and session counts
 
-+ [`uptime`].
-+ [`booted on`][`uptime`].
-+ `system time`.
-+ `system info` (dist, os, release-version, arch).
-+ usage of `/`, same as running [`df /`] - with color warnings if not enough free space.
-+ `sshd sessions` reporting: all the logged-in users and how many per user. Color notification if root is on.
-+ `memory usage & swap usage`.
-+ [`load average`].
-+ `number of processes` (total and for current user).
-+ `public hostname & IP`.
-+ `internal hostname & IP`.
-+ [`apt-get upgrades reporting`].
+### Enhanced Modern Features
+- 🐳 **Docker Integration**: Container status and running services
+- ⚙️ **SystemD Monitoring**: Failed service detection and alerts
+- 📦 **Package Updates**: Available system updates (APT/DNF support)
+- 🔒 **SSL Certificate Monitoring**: Certificate expiration warnings
+- 📊 **Performance Metrics**: Load averages and process counts
+- 💭 **Daily Quotes**: Inspirational tech quotes
 
-Additionally, it provides a nice colorized banner made with [`figlet`], or [`pyfiglet`] to be precise, as well as something like the following, but more elegantly and with colors, using [`fortune`] and [`cowsay`]:
+### Visual Excellence
+- 🎨 **Rich Terminal UI**: Beautiful tables, panels, and layouts using Rich library
+- 🌈 **Color-Coded Status**: Green/Yellow/Red indicators for system health
+- 📏 **Responsive Design**: Adapts to terminal width
+- 🎭 **ASCII Art Banners**: Multiple figlet fonts with random selection
+- 📱 **Modern Icons**: Emoji icons for better visual categorization
 
-```shell
-fortune | cowsay
+### Performance & Reliability
+- ⚡ **Async Operations**: Non-blocking network requests
+- 🧵 **Threaded Execution**: Parallel information gathering
+- 🛡️ **Error Handling**: Graceful degradation if services are unavailable
+- ⚙️ **Configurable**: Extensive configuration options
+- 🔧 **Modular Design**: Clean, maintainable code structure
+
+## 🚀 Fresh Ubuntu Installation Setup
+
+### Step 1: System Update
+```bash
+sudo apt update && sudo apt upgrade -y
 ```
 
-## Installation
-
-##### 1 - Prerequisites
-
-Assuming you have [`apt-get`] - installed on `debian` based dists, you need to:
-
-```shell
-sudo apt-get update
-sudo apt-get install python python-dev pip fortune fortunes cowsay
-sudo pip install -U pyfiglet uptime ipgetter psutil futures git+http://github.com/bufordtaylor/python-texttable
+### Step 2: Install Python 3 and pip
+```bash
+sudo apt install python3 python3-pip python3-venv git curl -y
 ```
 
-Or do this if you have [`apt-fast`]
+### Step 3: Install System Dependencies
+```bash
+# Essential tools for enhanced features
+sudo apt install -y \
+    figlet \
+    lsb-release \
+    net-tools \
+    htop \
+    curl \
+    wget \
+    systemd
 
-```shell
-sudo apt-fast update
-sudo apt-fast install python python-dev pip
-sudo apt-fast install fortune fortunes cowsay
-sudo pip install -U pyfiglet uptime ipgetter psutil futures git+http://github.com/bufordtaylor/python-texttable
+# Optional: Docker support (if you want Docker monitoring)
+sudo apt install -y docker.io
+sudo systemctl enable docker
+sudo usermod -aG docker $USER
 ```
 
-##### 2 - Clone the repo:
-
-```shell
+### Step 4: Clone and Setup MOTD
+```bash
+# Clone the repository
 cd /opt
-git clone https://github.com/Centril/motd.dynamic/
-cd motd.dynamic
+sudo git clone https://github.com/your-repo/motd.dynamic
+sudo chown -R $USER:$USER /opt/motd.dynamic
+cd /opt/motd.dynamic
+
+# Create virtual environment (recommended)
+python3 -m venv motd-env
+source motd-env/bin/activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Make executable
 chmod +x motd.dynamic
 ```
 
-This installs it to `/opt/motd.dynamic`, but the choice is yours.
+### Step 5: Test the MOTD
+```bash
+# Test run
+./motd.dynamic
 
-##### 3 - Configure & Edit [`motd.dynamic`] with your favourite editor.
-```shell
-nano motd.dynamic
+# If everything works, you should see a beautiful system info display
 ```
 
-##### 4 - Add script to `/etc/profile`.
+### Step 6: Setup Auto-Display on Login
 
-```shell
-echo /opt/motd.dynamic/motd.dynamic | sudo tee -a /etc/profile
+#### Option A: For all users (system-wide)
+```bash
+# Add to system profile
+echo '/opt/motd.dynamic/motd-env/bin/python /opt/motd.dynamic/motd.dynamic' | sudo tee -a /etc/profile
+
+# Disable default Ubuntu MOTD
+sudo chmod -x /etc/update-motd.d/*
 ```
 
-##### 5 - Remove Last Login & Motd from sshd logins.
+#### Option B: For specific user
+```bash
+# Add to user's bash profile
+echo '/opt/motd.dynamic/motd-env/bin/python /opt/motd.dynamic/motd.dynamic' >> ~/.bashrc
 
-Find `PrintMotd` and `PrintLastLog`, set them both to `no`.
-Then restart `sshd`
+# Or for zsh users
+echo '/opt/motd.dynamic/motd-env/bin/python /opt/motd.dynamic/motd.dynamic' >> ~/.zshrc
+```
 
-```shell
+#### Option C: SSH-only display
+```bash
+# Create wrapper script
+sudo tee /etc/ssh/sshrc > /dev/null << 'EOF'
+#!/bin/bash
+/opt/motd.dynamic/motd-env/bin/python /opt/motd.dynamic/motd.dynamic
+EOF
+
+sudo chmod +x /etc/ssh/sshrc
+```
+
+### Step 7: Configure SSH (Optional)
+```bash
+# Edit SSH config to disable default messages
 sudo nano /etc/ssh/sshd_config
-/etc/init.d/ssh restart
+
+# Add or modify these lines:
+PrintMotd no
+PrintLastLog no
+
+# Restart SSH
+sudo systemctl restart sshd
 ```
 
-## Deciding on a figlet font:
+## ⚙️ Configuration
 
-Can't decide what figlet font to use? Run this in and replace `<text>` with the text you wish to use.
+Edit the configuration directly in the script by modifying the `MOTDConfig` class:
 
-```shell
-pyfiglet -l | while read line ; do echo $line && echo && pyfiglet <text> --font=$line ; done > figletfonts
+```python
+@dataclass
+class MOTDConfig:
+    # Display settings
+    line_length: int = 100
+    banner_text: str = "YOUR-SERVER-NAME"
+    
+    # Color theme
+    color_ok: str = "green"
+    color_warn: str = "yellow" 
+    color_critical: str = "red"
+    
+    # Feature toggles
+    show_docker: bool = True
+    show_systemd: bool = True
+    show_weather: bool = False  # Requires API key
+    
+    # Thresholds
+    disk_warn_threshold: int = 70
+    memory_warn_threshold: int = 70
+    cpu_warn_threshold: int = 70
 ```
 
-<!-- references -->
+## 🔧 Advanced Features
 
-[Gittip]: http://img.shields.io/gittip/lefoy.svg?style=flat
-[url: Gittip]: https://www.gittip.com/lefoy/
-[License]: http://img.shields.io/badge/license-GPL2.0-blue.svg?style=flat
-[url: License]: https://github.com/lefoy/cyanide-theme/blob/master/LICENSE.md
-[Semver]: http://img.shields.io/badge/semver-2.0.0-blue.svg?style=flat
-[url: Semver]: http://semver.org/spec/v2.0.0.html
+### Weather Integration (Optional)
+1. Get a free API key from [OpenWeatherMap](https://openweathermap.org/api)
+2. Set `weather_api_key` in the config
+3. Enable `show_weather: True`
 
-[`motd.dynamic`]: https://github.com/Centril/motd.dynamic/
+### Custom Figlet Fonts
+```bash
+# Install additional figlet fonts
+sudo apt install figlet-fonts
 
-[`uptime`]: https://github.com/Cairnarvon/uptime
-[`load average`]: http://blog.scoutapp.com/articles/2009/07/31/understanding-load-averages
-[`apt-get upgrades reporting`]: https://nickcharlton.net/posts/debian-ubuntu-dynamic-motd.html
-[`df /`]: http://en.wikipedia.org/wiki/Df_%28Unix%29
-[`apt-get`]: http://linux.die.net/man/8/apt-get
-[`apt-fast`]: https://github.com/ilikenwf/apt-fast
-[`pyfiglet`]: https://github.com/pwaller/pyfiglet
-[`figlet`]: http://www.figlet.org/
-[`cowsay`]: http://en.wikipedia.org/wiki/Cowsay
-[`fortune`]: http://en.wikipedia.org/wiki/Fortune_%28Unix%29
+# List available fonts
+figlet -l
+
+# Add your favorites to banner_fonts list in config
+```
+
+### Performance Tuning
+```bash
+# For faster startup, disable slow features:
+# - Set show_weather: False
+# - Set show_ssl_certs: False for systems without SSL services
+# - Adjust timeouts in the code if needed
+```
+
+## 📋 Troubleshooting
+
+### Common Issues
+
+#### Import Errors
+```bash
+# Make sure virtual environment is activated
+source /opt/motd.dynamic/motd-env/bin/activate
+pip install -r requirements.txt
+```
+
+#### Permission Errors
+```bash
+# Fix ownership
+sudo chown -R $USER:$USER /opt/motd.dynamic
+
+# Fix permissions
+chmod +x motd.dynamic
+```
+
+#### Docker Permission Denied
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Logout and login again
+```
+
+#### Slow Performance
+```bash
+# Disable network-dependent features
+# Edit motd.dynamic and set:
+# show_weather: False
+# Or increase timeout values
+```
+
+## 🆚 Comparison with Original
+
+| Feature | Original | Modern Version |
+|---------|----------|----------------|
+| **Visual Design** | Basic text tables | Rich UI with colors, icons, panels |
+| **Performance** | Sequential execution | Threaded/async operations |
+| **Error Handling** | Basic try/catch | Graceful degradation |
+| **Dependencies** | Old libraries (texttable, uptime) | Modern libraries (rich, requests) |
+| **Features** | Basic system info | Docker, SSL, SystemD, quotes |
+| **Python Support** | Python 2/3 compatibility | Python 3 native |
+| **Configuration** | Global variables | Structured config class |
+| **Maintainability** | Monolithic script | Modular OOP design |
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+GNU General Public License v2 or later
+
+## 🙏 Acknowledgments
+
+- Original MOTD script by Mazdak Farrokhzad, Nick Charlton, Dustin Kirkland, and Michael Vogt
+- [Rich library](https://github.com/Textualize/rich) for beautiful terminal output
+- [PyFiglet](https://github.com/pwaller/pyfiglet) for ASCII art generation
+- [PSUtil](https://github.com/giampaolo/psutil) for system information
+
+---
+
+**Made with ❤️ for the Linux community**

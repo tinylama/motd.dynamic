@@ -1,748 +1,681 @@
-#!/usr/bin/env python
-#
-#	motd script written in python.
-#	Copyright (c) 2015 Mazdak Farrokhzad,
-#	Nick Charlton, Dustin Kirkland and Michael Vogt
-#
-#	Based on prior work by: Nick Charlton, Dustin Kirkland and Michael Vogt.
-#
-#	This program is free software; you can redistribute it and/or modify
-#	it under the terms of the GNU General Public License as published by
-#	the Free Software Foundation; either version 2 of the License, or
-#	(at your option) any later version.
-#
-#	This program is distributed in the hope that it will be useful,
-#	but WITHOUT ANY WARRANTY; without even the implied warranty of
-#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#	GNU General Public License for more details.
-#
-#	You should have received a copy of the GNU General Public License along
-#	with this program; if not, write to the Free Software Foundation, Inc.,
-#	51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-
+#!/usr/bin/env python3
 """
-console program for printing a motd on linux.
-edit the configurations to your liking.
+Modern Dynamic MOTD (Message of the Day) Script
+A visually stunning and highly configurable system information display for Linux systems.
+
+Copyright (c) 2015 Mazdak Farrokhzad, Nick Charlton, Dustin Kirkland, Michael Vogt
+Updated for Python 3 with modern improvements by Assistant
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
 """
 
-"""
-Configurations:
-"""
-
-# Set this to false when you're done - DEBUG disables HOST_IP_PUBLIC & APT_REPORT.
-DEBUG				=	True
-
-# Line length for tables & headers.
-LINE_LENGTH			=	73
-LEFT_COL_LENGTH		=	22
-
-# Figlet banner content:
-BANNER				=	'centrilnas'
-# Figlet banner fonts, randomized.
-BANNER_FONTS		=	['rozzo']
-# Newlines count before & after banner as well as at end of motd.
-BANNER_PAD_NL		=	1
-# Justification of banner, 0 for left, 1 for center, 2 for right.
-BANNER_JUSTIFY		=	1
-
-# Randomize a fortune, precendence over COWSAY_STATIC.
-COWSAY_FORTUNE		=	True
-COWSAY_BINS			=	'/usr/games/'
-# Use a static cowsay.
-COWSAY_STATIC		=	''
-# Mode? 0 => cowsay, 1 = cowthink, 2 = randomize both.
-COWSAY_MODE			=	2
-# List of cowsay animals to randomize from, or 'all' if all are allowed.
-# If you want the default animal, set it to 'default'
-# To see what animals are available, do: $ cowsay -l
-COWSAY_ANIMALS		=	'all'
-# Justification of cowsay, 0 for left, 1 for center, 2 for right.
-COWSAY_JUSTIFY		=	2
-
-# Display notice when no mail?
-MAIL_NONE_DISPLAY	=	True
-# Display how many new mails, not just that there were new mails.
-MAIL_NEW_COUNT		=	True
-# Consider the mail read after displaying the motd.
-MAIL_CONSIDER_READ	=	False
-
-# When to use warning color for root usage (`df /`).
-ROOT_USAGE_WARN		=	60
-# When to use critical color for root usage (`df /`).
-ROOT_USAGE_CRITICAL	=	80
-
-# When to use warning color for memory usage %.
-MEM_USAGE_WARN		=	60
-# When to use critical color for memory usage %.
-MEM_USAGE_CRITICAL	=	80
-
-# Set to False if you don't want to get hostname & ip from ipgetter (external ip), can be a bit slow.
-HOST_IP_PUBLIC		=	True
-# Set to False if you don't want to use socket to retrieve hostname & ip (internal if behind an internal proxy).
-HOST_IP_FAST		=	True
-# The ip to test against, 8.8.8.8 is google DNS, assumes internet access.
-HOST_IP_FAST_TESTIP	=	('8.8.8.8', 80 )
-
-# Set to False if you think APT upgrades reporting takes too long.
-APT_REPORT			=	True
-# Set to False if you want apt_report not to display if no upgrades.
-APT_NONE_DISPLAY	=	True
-
-# Various color settings, they are all semantic.
-# Color for OK status.
-COLOR_OK			=	'green'
-# Color for WARNING status.
-COLOR_WARN			=	'yellow'
-# Color for CRITICAL status.
-COLOR_CRITICAL		=	'red'
-# Banner color, more than one => banner will be a randomized "rainbow" of given colors:
-COLOR_BANNER		=	('yellow', 'cyan')
-# Cowsay color, more than one => cowsay will be a randomized "rainbow" of given colors:
-COLOR_COWSAY		=	('cyan', 'yellow', 'green', 'magenta')
-# Cowsay border color, more than one => border will be a randomized "rainbow" of given colors:
-COLOR_COWSAY_BORDER	=	'cyan'
-# Fortune text color.
-COLOR_FORTUNE		=	'white'
-# Color of table section headers.
-COLOR_HEADER		=	'yellow'
-# Color of table borders.
-COLOR_BORDERS		=	'cyan'
-# Color of left column colon separator.
-COLOR_COLUMN_LEFT	=	'magenta'
-# Color of other stuff.
-COLOR_NORMAL		=	'white'
-
-"""
-Coloring & display utilities:
-"""
-
-# Color definitions in xterm-256.
-colors = {x : 9 + i for i, x in enumerate( ('red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white') )}
-from texttable import bcolors
-bcolor_mappings = {
-	'green':	bcolors.GREEN,
-	'blue':		bcolors.BLUE,
-	'yellow':	bcolors.YELLOW,
-	'red':		bcolors.RED,
-	'magenta':	bcolors.PURPLE,
-	'white':	bcolors.WHITE
-}
-
-def color_ins( text, c ):
-	return "\033[{0}m{1}\033[0m".format( c, text )
-
-def colored( msg, color = COLOR_NORMAL, b = False ):
-	''' Returns colorized msg. '''
-	b = '1;' if b else ''
-	c = color_ins( msg, b + '38;05;' + str( colors.get( color ) ) )
-	return c
-
-def bcolor( msg, color ):
-	''' Translates from colored to bcolor, they are not 100% compatible.
-		Cyan is for example missing.
-	'''
-	from texttable import get_color_string
-	picked = bcolor_mappings.get( color, -1 )
-	return colored( msg, color ) if picked == -1 else get_color_string( msg, picked )
-
-def p( msg, color = COLOR_NORMAL, b = False ):
-	''' Color prints but does expandtabs on message first. '''
-	print colored( msg.expandtabs(), color, b )
-
-def critical( msg ):
-	''' Returns text notifying a critical message. '''
-	return bcolor( msg, COLOR_CRITICAL )
-
-def critical_if( msg, cond, otherwise = COLOR_NORMAL ):
-	''' Returns text notifying a critical message if cond holds, otherwise with normal color. '''
-	return bcolor( msg, COLOR_CRITICAL if cond else otherwise )
-
-def warn( msg ):
-	''' Returns text notifying a warning message if cond holds. '''
-	return bcolor( msg, COLOR_WARN )
-
-def warn_if( msg, cond, otherwise = COLOR_NORMAL ):
-	''' Returns text notifying a warning message if cond holds, otherwise with normal color. '''
-	return bcolor( msg, COLOR_WARN if cond else otherwise )
-
-def ok_warn_crit( msg, level, thresh ):
-	''' Returns text notifying: critical if second threshold is met, warning if first threshold is met, otherwise ok. '''
-	return critical( msg ) if level > thresh[1] else warn_if( msg, level > thresh[0], COLOR_OK )
-
-def header( title ):
-	''' Prints a header. '''
-	from operator import xor
-
-	title = ' ' + title + ' '
-
-	def pad( left = True, adjust = 0 ):
-		''' Returns a colored padding. '''
-		c = ('', ':') if left else (':', '')
-		pad = '+' * (ceil_div( LINE_LENGTH - 2 - len( title ), 2 ) - adjust)
-		return colored( c[0] + pad + c[1], COLOR_BORDERS )
-
-	# Compute right adjustment.
-	right_adjust = 1 if xor( len( title ) % 2, LINE_LENGTH % 2 ) else 0
-
-	# Return the header.
-	p( pad() + colored( title, COLOR_HEADER ) + pad( False, right_adjust ) )
-
-def endtables():
-	''' Ends all tables with a line. '''
-	print colored( '+' * LINE_LENGTH, COLOR_BORDERS)
-
-def table( head, jobs, rows ):
-	''' Prints a table. '''
-	from texttable import Texttable
-	from inspect import isfunction
-
-	# Get rows from jobs if it is a job.
-	rows = jobs.out( rows )
-
-	# Need rows, if none, don't print table.
-	if not rows: return
-
-	# Output a header.
-	header( head )
-
-	# Create table with some configs.
-	table = Texttable()
-	table.set_deco( 0 )
-	table.set_cols_width( (LEFT_COL_LENGTH, LINE_LENGTH - (LEFT_COL_LENGTH + 6)) )
-	table.set_cols_dtype( ('t', 't') )
-	table.set_cols_align( ('r', 'l') )
-	table.set_cols_valign( ('m', 'm') )
-
-	# Provide a left-right column separator only if
-	# left column is non-empty for some row.
-	left_col = ':' if any( r[0] for r in rows ) else ' '
-
-	# Add all rows to table
-	# - process left column and add color to it.
-	# - get right column from job if applicable.
-	table.add_rows( [[bcolor( r[0] + left_col, COLOR_COLUMN_LEFT ), jobs.out( r[1] )] for r in rows], False )
-
-	# Add colorized border & print table.
-	border = colored( '+', COLOR_BORDERS )
-	print '\n'.join( border + l + border for l in table.draw().splitlines() )
-
-def justify( content, mode ):
-	''' Returns content, justified against LINE_LENGTH
-		according to mode in [0 => left, 1 => center, 2 => right].
-	'''
-	if mode in (1, 2):
-		lines = content.splitlines()
-
-		# Compute max width.
-		max_width = max( len( l ) for l in lines )
-
-		if max_width < LINE_LENGTH:
-			# Compute repeat.
-			repeat = ' ' * ceil_div( LINE_LENGTH - max_width, 3 - mode )
-			# Adjust text.
-			content = '\n'.join( repeat + l for l in lines )
-
-	return content
-
-"""
-Logic:
-"""
-
-if DEBUG:
-	APT_REPORT		= False
-	HOST_IP_PUBLIC	= False
-
-def call( args ):
-	''' Calls a process determined by args and returns stdout. '''
-	import subprocess
-	return subprocess.Popen( args, stdout = subprocess.PIPE ).communicate()[0].strip()
-
-def err( msg, cond = True ):
-	import sys
-	if cond:
-		sys.stderr.write( msg )
-		p( msg, COLOR_CRITICAL, True )
-		sys.exit( -1 )
-
-def ceil_div( a, b ):
-	''' Integer division with ceil. '''
-	return -(-a // b)
-
-def banner_newlines():
-	''' Returns newlines for banner. '''
-	return '\n' * BANNER_PAD_NL
-
-def banner():
-	''' Returns a figlet banner according to customizations. '''
-	import re
-	from random import randint, choice
-	from pyfiglet import Figlet
-
-	# Randomize font.
-	font = BANNER_FONTS[randint( 0, len( BANNER_FONTS ) - 1 )]
-
-	# Create figlet.
-	text = Figlet( font = font ).renderText( BANNER )
-
-	# Remove newlines before and after.
-	text = re.sub( "^\s+[\n\r]+", '', re.sub( "\s+[\n\r]+$", '', text ) )
-
-	# Justify text.
-	text = justify( text, BANNER_JUSTIFY )
-
-	# Colorize.
-	text =	colored( text, COLOR_BANNER, True ) if len( COLOR_BANNER ) == 1\
-			else ''.join( colored( c ) if c.isspace() else colored( c, choice( COLOR_BANNER ), True ) for c in text )
-
-	pad = banner_newlines()
-	return pad + text + pad
-
-def end():
-	''' Prints the end of the motd. '''
-	print banner_newlines(),
-
-def cowsay():
-	''' Returns cowsay, fortune, etc. '''
-	from os import walk
-	from random import choice
-	from collections import Iterable
-
-	COWSAY_MODE = 0
-
-	# Pick cowsay or cowthink.
-	mode = choice( (0, 1) ) if COWSAY_MODE == 2 else COWSAY_MODE
-	say = COWSAY_BINS + ('cowsay', 'cowthink')[mode]
-
-	# Pick a fortune.
-	fortune = call( COWSAY_BINS + 'fortune' ) if COWSAY_FORTUNE else COWSAY_STATIC
-
-	def all_animals():
-		return call( ( say, '-l') ).split( '\n', 1 )[1].split()
-
-	# Pick an animal.
-	animal = choice( all_animals() )  if COWSAY_ANIMALS == 'all' else\
-			 choice( COWSAY_ANIMALS ) if isinstance( COWSAY_ANIMALS, Iterable ) else\
-			 'default'
-
-	# Get cowsay.
-	content = call( (say, '-f', animal, fortune) )
-
-	# Justify it.
-	content = justify( content, COWSAY_JUSTIFY )
-
-	# Find border:
-	mid_sep = [('(', ')')] if mode else (('/', '\\'), ('|', '|'), ('\\', '/'), ('<', '>'))
-	bubble	= 'o' if mode else '\\'
-	lines	= content.splitlines()
-	le		= enumerate( lines )
-	border	= []
-
-	def find_pair( haystack, needle ):
-		''' Finds a pair in haystack given by 2-tuple needle, -1 if pair not found. '''
-		first = haystack.find( needle[0] )
-		if first == -1: return -1
-		else:
-			second = haystack.rfind( needle[1], first )
-			return -1 if second == -1 else (first, second)
-
-	def append( mode, i, pair ):
-		''' Appends (mode, i, pair) to border. '''
-		border.append( (mode, i, pair ) )
-
-	def find_append( e, needle ):
-		''' Finds pair in e and appends it to border. '''
-		append( 0, e[0], find_pair( e[1], needle ) )
-
-	# Find top + mid + bottom
-	find_append( le.next(), ('_', '_') )				# Find top border.
-	for i, l in le:										# Find all mid borders.
-		found = False
-		for sep in mid_sep:
-			f = find_pair( l, sep )
-			if f != -1: found = f; break
-		if found: append( 2, i, found )
-		else: find_append( (i, l), ('-', '-') ); break	# Find bottom border.
-
-	# Find "bubbles":
-	(i, l) = le.next()
-	start = l.find( bubble, 0 )
-	if start == -1:
-		next_i = i
-	else:
-		append( 1, i, (start, start + 1) )
-		start += 1
-		for i, l in le:
-			if l.find( bubble, start, start + 1 ) == -1: next_i = i; break
-			append( 1, i, (start, start + 1) )
-			start += 1
-			next_i = i + 1
-
-	# Colorize: borders, fortune, cowsay.
-	def borderize( m ):
-		''' Colorizes cowsay border. '''
-		return colored( m, COLOR_COWSAY_BORDER )
-
-	def cowsayize( m ):
-		''' Colorizes cowsay. '''
-		return colored( m, choice( COLOR_COWSAY ) )
-
-	def mid( line, s, e, mode ):
-		''' Colorizes cowsay border + fortune. '''
-		return	line[:s] + borderize( line[s:s + 1] )		+\
-				colored( line[s + 1:e], COLOR_FORTUNE ) 	+\
-				borderize( line[e:e + 1] ) + line[e + 1:]
-
-	def not_mid( line, s, e, cowsay ):
-		''' Colorizes top + bottom + bubbles. '''
-		l, c, r = line[:s], line[s:e + 1], line[e + 1:]
-		if cowsay: l, r = cowsayize( l ), cowsayize( r )
-		return l + borderize( c ) + r
-
-	mode_fn = (not_mid, not_mid, mid)
-	for i, b in enumerate( border ):
-		(mode, i_line, (s, e)) = b
-		lines[i_line] = mode_fn[mode]( lines[i_line], s, e, mode )
-
-	for i in xrange( next_i, len( lines ) ): lines[i] = cowsayize( lines[i] )
-
-	# We are done!
-	content = '\n' + '\n'.join( lines );
-
-	return content
-
-def mail():
-	# See https://tools.ietf.org/html/rfc4155
-	import os
-	import os.path
-	import time
-	mailbox = '/var/spool/mail/' + curr_user()
-
-	def d( content, color = COLOR_NORMAL ): return colored( justify( content, 1 ) + '\n', color )
-	def none(): return d( 'No new mail' ) if MAIL_NONE_DISPLAY else ''
-
-	if not os.path.isfile( mailbox ): return none()
-
-	stat = os.stat( mailbox )
-	if stat.st_mtime > stat.st_atime:
-		# mailbox has been modified after accessed.
-		if MAIL_NEW_COUNT:
-			# check how many new mails.
-			count = 0
-			newlines = 2
-
-			for l in open( mailbox ):
-				if l.isspace(): newlines += 1
-				else:
-					# New == We have a From header the date > atime.
-					if newlines == 2 and l.startswith( 'From ' ) and time.mktime( time.strptime( l.split( None, 2 )[2].strip() ) ):
-						count += 1
-					newlines = 0
-
-			# open() will change access time, correct it.
-			os.utime( mailbox, (time.time(), stat.st_mtime) if MAIL_CONSIDER_READ else (stat.st_atime, stat.st_mtime) )
-
-			return d( 'You have {0} new mails'.format( count ), COLOR_WARN ) if count else none()
-		else: return d( 'You have new mail', COLOR_WARN )
-	else: return none()
-
-def up_time():
-	''' Returns uptime in human readable format. '''
-	from uptime import uptime
-	up = uptime()
-
-	if up is None: err( 'Unable to determine uptime. Patches welcome.' )
-
-	parts = []
-	days, up = up // 86400, up % 86400
-	if days: parts.append( '%d day%s' % (days, 's' if days != 1 else '') )
-
-	hours, up = up // 3600, up % 3600
-	if hours: parts.append( '%d hour%s' % (hours, 's' if hours != 1 else '') )
-
-	minutes, up = up // 60, up % 60
-	if minutes: parts.append( '%d minute%s' % (minutes, 's' if minutes != 1 else '') )
-
-	if up or not parts: parts.append( '%.2f seconds' % up )
-
-	return ', '.join( parts ).strip()
-
-def boot_time():
-	''' Returns boot time in human readable format. '''
-	from uptime import boottime
-	return boottime().strftime( '%c' )
-
-def sys_time():
-	''' Returns local system time in human readable format. '''
-	import time
-	return time.asctime( time.localtime(time.time()) )
-
-def machine():
-	''' Returns dist, os, release, architecture in human readable format. '''
-	import platform
-	dist = ' '.join( x.capitalize() for x in platform.linux_distribution() ).strip()
-	return ', '.join( (dist, platform.system(), platform.release(), platform.architecture()[0]) ).strip()
-
-def root_usage():
-	''' Returns usage of /, e.g: `df /` in human readable format. '''
-	import psutil
-	usage = psutil.disk_usage( '/' ).percent
-	return ok_warn_crit( '{0}%'.format( usage ), usage, (ROOT_USAGE_WARN, ROOT_USAGE_CRITICAL) )
-
-def users():
-	''' Returns user sessions and count for each in human readable format. '''
-	import psutil
-	from collections import defaultdict
-	users = defaultdict( int )
-	for u in psutil.users(): users[u.name] += 1
-	return warn_if( ', '.join( '{0} ({1})'.format( user, count ) for user, count in users.items() ).strip(), 'root' in users )
-
-def curr_user():
-	''' Returns the current user. '''
-	import getpass
-	return getpass.getuser()
-
-def lastlog():
-	''' Returns the last logged in user and the time in human readable format. '''
-	import re
-	data = re.split( '\s{2,}', call( ('lastlog', '-u' + curr_user()) ).splitlines()[1] )
-	user = data[0]
-	time = data[len( data ) - 1].rsplit( ' ', 2  )
-	return time[0] + ' ' + time[2] + ' by ' + warn_if( user, user == 'root' )
-
-def memory():
-	''' Returns current memory usage in human readable format. '''
-	import psutil
-	m = psutil.virtual_memory()
-	d = [float( v ) / 1024 ** 3 for v in (m.total, m.used, m.free, m.cached) ]
-	msg = '{0}% | total: {1:.2f}, used: {2:.2f},\nfree: {3:.2f}, cached: {4:.2f}'\
-			.format( m.percent, d[0], d[1], d[2], d[3] )
-	return ok_warn_crit( msg, m.percent, [MEM_USAGE_WARN, MEM_USAGE_CRITICAL] )
-
-def swap():
-	''' Returns current swap usage in human readable format. '''
-	import psutil
-	m = psutil.swap_memory()
-	d = [float( v ) / 1024 ** 3 for v in (m.total, m.used, m.free) ]
-	msg = '{0}% | total: {1:.2f}, used: {2:.2f}, free: {3:.2f}'\
-			.format( m.percent, d[0], d[1], d[2] )
-	return ok_warn_crit( msg, m.percent, [MEM_USAGE_WARN, MEM_USAGE_CRITICAL] )
-
-def loadavg():
-	''' Returns load average in human readable format. '''
-	import os
-	return ', '.join( "%f" % x for x in os.getloadavg() ).strip()
-
-def num_processes():
-	''' Returns number of processes for everyone and current user in human readable format. '''
-	import psutil
-	total = 0
-	mine = 0
-	me = curr_user()
-	for p in psutil.process_iter():
-		total += 1
-		if p.username() == me: mine += 1
-
-	return '{0} total running of which {1} are yours'.format( total, mine )
-
-def hostinfo():
-	''' Returns host info in human readable format. '''
-	import socket
-	import ipgetter
-
-	retr = []
-
-	public_host = 0
-
-	# Use ipgetter to retrieve public ip & hostname.
-	if HOST_IP_PUBLIC:
-		public_ip 	= ipgetter.myip()
-		public_host = socket.getfqdn( public_ip )
-		retr.append( ('hostname (public)', public_host) )
-		retr.append( ('address (public)', public_ip) )
-
-	# Use socket to retrieve internal ip & hostname.
-	if HOST_IP_FAST:
-		s = socket.socket( socket.AF_INET, socket.SOCK_DGRAM )
-		s.connect( HOST_IP_FAST_TESTIP )
-		fast_ip = s.getsockname()[0]
-		s.close()
-
-		fast_host = socket.getfqdn( fast_ip )
-
-		# Don't duplicate if public & internal are the same.
-		if fast_host != public_host: retr.append( ('hostname (internal)', fast_host) )
-
-		retr.append( ('address (internal)', fast_ip) )
-
-	return retr
-
-def apt_reporter():
-	'''
-	Reports on apt updates.
-	1. Opens up the apt cache.
-	2. Does the equivalent of apt-get dist-upgrade.
-	3. Then the equivalent of apt-get upgrade.
-	4. Counts the possible packages which are marked to be installed or upgraded.
-	5. Reports, closes the cache and exits.
-	'''
-
-	class OpNullProgress( object ):
-		'''apt progress handler which supresses any output.'''
-		def update( self ):
-			pass
-		def done( self ):
-			pass
-
-	def is_security_upgrade( pkg ):
-		'''
-		Checks to see if a package comes from a DISTRO-security source.
-		'''
-		DISTRO = call( ("lsb_release", "-c", "-s") )
-		security_package_sources = [("Ubuntu", "%s-security" % DISTRO),
-								   ("Debian", "%s-security" % DISTRO)]
-
-		for (file, index) in pkg.file_list:
-			for origin, archive in security_package_sources:
-				if (file.archive == archive and file.origin == origin):
-					return True
-		return False
-
-	import apt_pkg
-
-	# init apt and config
-	apt_pkg.init()
-
-	# open the apt cache
-	try:
-		cache = apt_pkg.Cache( OpNullProgress() )
-	except SystemError, e:
-		err( "Error: Opening the cache (%s)" % e )
-
-	# setup a DepCache instance to interact with the repo
-	depcache = apt_pkg.DepCache( cache )
-
-	# take into account apt policies
-	depcache.read_pinfile()
-
-	# initialise it
-	depcache.init()
-
-	# give up if packages are broken
-	err( "Error: Broken packages exist.", depcache.broken_count > 0 )
-
-	# mark possible packages
-	try:
-		# run distro-upgrade
-		depcache.upgrade( True )
-		# reset if packages get marked as deleted -> we don't want to break anything
-		if depcache.del_count > 0:
-			depcache.init()
-
-		# then a standard upgrade
-		depcache.upgrade()
-	except SystemError, e:
-		err( "Error: Couldn't mark the upgrade (%s)" % e )
-
-	# run around the packages
-	upgrades = 0
-	security_upgrades = 0
-	for pkg in cache.packages:
-		candidate = depcache.get_candidate_ver( pkg )
-		current = pkg.current_ver
-
-		# skip packages not marked as upgraded/installed
-		if not (depcache.marked_install( pkg ) or depcache.marked_upgrade( pkg )):
-			continue
-
-		# increment the upgrade counter
-		upgrades += 1
-
-		# keep another count for security upgrades
-		if is_security_upgrade( candidate ):
-			security_upgrades += 1
-
-		# double check for security upgrades masked by another package
-		for version in pkg.version_list:
-			if (current and apt_pkg.version_compare( version.ver_str, current.ver_str ) <= 0):
-				continue
-			if is_security_upgrade( version ):
-				security_upgrades += 1
-				break
-
-	return [
-		['', warn_if( "upgrades to install: " + str( upgrades ), upgrades > 0, COLOR_OK ) ],
-		['', critical_if( "security upgrades to install: " + str( security_upgrades ), security_upgrades > 0, COLOR_OK ) ]
-	] if APT_NONE_DISPLAY else [
-		['', warn( "upgrades to install: " + str( upgrades ) ) ] if upgrades > 0 else [],
-		['', critical( "security upgrades to install: " + str( security_upgrades ) ) ] if security_upgrades > 0 else []
-	] if (upgrades + security_upgrades > 0) else []
-
-"""
-Jobs executor (parallellization):
-"""
-
-class jobs_executor( object ):
-	def process( self, jobs ):
-		''' Processes the given jobs in another process.
-			Value is retrieved with out( job )
-		'''
-		from concurrent.futures import ProcessPoolExecutor, as_completed
-		executor = ProcessPoolExecutor()
-		self.futures = {j: executor.submit( j ) for j in jobs}
-		return self
-
-	def out( self, job ):
-		''' Blocks the given job and returns its value.
-			If not processed prior, the value job is returned.
-		'''
-		from collections import Hashable
-		from inspect import isfunction
-		from concurrent.futures import as_completed
-		return as_completed( [self.futures[job]] ).next().result() if isinstance( job, Hashable ) and job in self.futures else job
-
-	def p( self, job ):
-		print self.out( job )
-
-"""
-Execute all jobs:
-"""
-jobs_todo = [
-	banner, cowsay, mail,
-	up_time, boot_time, sys_time,
-	machine, root_usage, users, lastlog, memory, swap, loadavg, num_processes,
-	hostinfo
-]
-if APT_REPORT: jobs_todo.append( apt_reporter )
-
-jobs = jobs_executor().process( jobs_todo )
-
-"""
-Print it all out:
-"""
-jobs.p( banner )
-jobs.p( mail )
-
-table( 'Time', jobs, [
-	['uptime', up_time],
-	['booted on', boot_time],
-	['system time', sys_time]
-] )
-table( 'System Info', jobs, [
-	['system', machine],
-	['usage of /', root_usage],
-	['sshd sessions', users],
-	['last login', lastlog],
-	['memory usage (GB)', memory],
-	['swap usage (GB)', swap],
-	['load average', loadavg],
-	['#processes', num_processes]
-] )
-table( 'Host & IP', jobs, hostinfo )
-
-if APT_REPORT: table( 'Apt Upgrades?', jobs, apt_reporter )
-
-endtables()
-
-jobs.p( cowsay )
-
-end()
+import asyncio
+import json
+import os
+import platform
+import re
+import socket
+import subprocess
+import sys
+import time
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple, Union
+
+# Third-party imports
+try:
+    import psutil
+    import pyfiglet
+    from rich.console import Console
+    from rich.table import Table
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich.columns import Columns
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    from rich.align import Align
+    from rich.layout import Layout
+    from rich import box
+    import requests
+    import distro
+except ImportError as e:
+    print(f"❌ Missing required package: {e}")
+    print("📦 Install with: pip3 install -r requirements.txt")
+    sys.exit(1)
+
+# Configuration class for better organization
+@dataclass
+class MOTDConfig:
+    # Display settings
+    line_length: int = 100
+    left_col_length: int = 25
+    
+    # Banner settings
+    banner_text: str = "CENTRIL-NAS"
+    banner_fonts: List[str] = None
+    banner_justify: str = "center"  # left, center, right
+    banner_style: str = "bold cyan"
+    
+    # Color theme (Rich color names)
+    color_ok: str = "green"
+    color_warn: str = "yellow" 
+    color_critical: str = "red"
+    color_info: str = "cyan"
+    color_header: str = "magenta"
+    color_accent: str = "blue"
+    
+    # Feature toggles
+    show_banner: bool = True
+    show_quote: bool = True
+    show_weather: bool = False  # Requires API key
+    show_docker: bool = True
+    show_systemd: bool = True
+    show_network_speed: bool = True
+    show_ssl_certs: bool = True
+    
+    # Thresholds
+    disk_warn_threshold: int = 70
+    disk_critical_threshold: int = 85
+    memory_warn_threshold: int = 70
+    memory_critical_threshold: int = 85
+    cpu_warn_threshold: int = 70
+    cpu_critical_threshold: int = 85
+    
+    # External services
+    weather_api_key: Optional[str] = None
+    weather_city: str = "London"
+    
+    def __post_init__(self):
+        if self.banner_fonts is None:
+            self.banner_fonts = ["slant", "3d", "big", "block", "doom", "epic"]
+
+# Global config instance
+config = MOTDConfig()
+
+# Console instance for Rich output
+console = Console(width=config.line_length)
+
+class SystemInfo:
+    """Collects and formats system information."""
+    
+    @staticmethod
+    def get_uptime() -> str:
+        """Get system uptime in human readable format."""
+        try:
+            with open('/proc/uptime', 'r') as f:
+                uptime_seconds = float(f.readline().split()[0])
+            
+            uptime_delta = timedelta(seconds=uptime_seconds)
+            days = uptime_delta.days
+            hours, remainder = divmod(uptime_delta.seconds, 3600)
+            minutes, _ = divmod(remainder, 60)
+            
+            parts = []
+            if days:
+                parts.append(f"{days} day{'s' if days != 1 else ''}")
+            if hours:
+                parts.append(f"{hours} hour{'s' if hours != 1 else ''}")
+            if minutes:
+                parts.append(f"{minutes} minute{'s' if minutes != 1 else ''}")
+                
+            return ", ".join(parts) if parts else "Less than a minute"
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_boot_time() -> str:
+        """Get system boot time."""
+        try:
+            return datetime.fromtimestamp(psutil.boot_time()).strftime('%Y-%m-%d %H:%M:%S')
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_system_info() -> str:
+        """Get system information."""
+        try:
+            # Try to get distribution info
+            try:
+                dist_info = distro.linux_distribution()
+                dist_name = f"{dist_info[0]} {dist_info[1]}"
+            except:
+                dist_name = platform.system()
+            
+            arch = platform.machine()
+            kernel = platform.release()
+            
+            return f"{dist_name}, {kernel}, {arch}"
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_cpu_info() -> Tuple[str, str]:
+        """Get CPU information and current usage."""
+        try:
+            # Get CPU model
+            with open('/proc/cpuinfo', 'r') as f:
+                for line in f:
+                    if line.startswith('model name'):
+                        cpu_model = line.split(':')[1].strip()
+                        break
+                else:
+                    cpu_model = "Unknown CPU"
+            
+            # Get CPU usage
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_count = psutil.cpu_count()
+            
+            cpu_info = f"{cpu_model} ({cpu_count} cores)"
+            cpu_usage = f"{cpu_percent:.1f}%"
+            
+            return cpu_info, cpu_usage
+        except:
+            return "Unknown", "Unknown"
+    
+    @staticmethod
+    def get_memory_info() -> Tuple[str, str]:
+        """Get memory information."""
+        try:
+            mem = psutil.virtual_memory()
+            total_gb = mem.total / (1024**3)
+            used_gb = mem.used / (1024**3)
+            available_gb = mem.available / (1024**3)
+            
+            memory_info = f"{total_gb:.1f} GB total"
+            memory_usage = f"{mem.percent:.1f}% ({used_gb:.1f}G used, {available_gb:.1f}G free)"
+            
+            return memory_info, memory_usage
+        except:
+            return "Unknown", "Unknown"
+    
+    @staticmethod
+    def get_disk_info() -> List[Tuple[str, str, float]]:
+        """Get disk usage information."""
+        disk_info = []
+        try:
+            partitions = psutil.disk_partitions()
+            for partition in partitions:
+                try:
+                    usage = psutil.disk_usage(partition.mountpoint)
+                    total_gb = usage.total / (1024**3)
+                    used_gb = usage.used / (1024**3)
+                    free_gb = usage.free / (1024**3)
+                    percent = (usage.used / usage.total) * 100
+                    
+                    mount_point = partition.mountpoint
+                    usage_str = f"{percent:.1f}% ({used_gb:.1f}G used, {free_gb:.1f}G free of {total_gb:.1f}G)"
+                    
+                    disk_info.append((mount_point, usage_str, percent))
+                except:
+                    continue
+        except:
+            pass
+        
+        return disk_info
+    
+    @staticmethod
+    def get_network_info() -> Dict[str, str]:
+        """Get network interface information."""
+        network_info = {}
+        try:
+            interfaces = psutil.net_if_addrs()
+            for interface, addrs in interfaces.items():
+                if interface == 'lo':  # Skip loopback
+                    continue
+                    
+                for addr in addrs:
+                    if addr.family == socket.AF_INET:  # IPv4
+                        network_info[f"{interface} (IPv4)"] = addr.address
+                    elif addr.family == socket.AF_INET6:  # IPv6
+                        # Show only the first part of IPv6 for brevity
+                        ipv6_short = addr.address.split('%')[0][:20] + "..."
+                        network_info[f"{interface} (IPv6)"] = ipv6_short
+        except:
+            pass
+        
+        return network_info
+    
+    @staticmethod
+    def get_public_ip() -> str:
+        """Get public IP address."""
+        try:
+            response = requests.get('https://api.ipify.org', timeout=3)
+            return response.text.strip()
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_logged_users() -> str:
+        """Get currently logged in users."""
+        try:
+            users = psutil.users()
+            user_counts = defaultdict(int)
+            for user in users:
+                user_counts[user.name] += 1
+            
+            if not user_counts:
+                return "No active sessions"
+            
+            user_list = [f"{user} ({count})" for user, count in user_counts.items()]
+            return ", ".join(user_list)
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_load_average() -> str:
+        """Get system load average."""
+        try:
+            load1, load5, load15 = os.getloadavg()
+            return f"{load1:.2f}, {load5:.2f}, {load15:.2f}"
+        except:
+            return "Unknown"
+    
+    @staticmethod
+    def get_processes_count() -> str:
+        """Get process count."""
+        try:
+            total_processes = len(psutil.pids())
+            return str(total_processes)
+        except:
+            return "Unknown"
+
+class EnhancedFeatures:
+    """Additional modern features."""
+    
+    @staticmethod
+    def get_docker_info() -> Optional[Dict[str, str]]:
+        """Get Docker container information."""
+        try:
+            result = subprocess.run(['docker', 'ps', '--format', 'table {{.Names}}\t{{.Status}}'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')[1:]  # Skip header
+                if lines and lines[0]:  # Check if there are any containers
+                    running = len([l for l in lines if 'Up' in l])
+                    total = len(lines)
+                    return {
+                        "containers": f"{running}/{total} running",
+                        "details": lines[:3]  # Show first 3 containers
+                    }
+        except:
+            pass
+        return None
+    
+    @staticmethod
+    def get_systemd_failed() -> Optional[List[str]]:
+        """Get failed systemd services."""
+        try:
+            result = subprocess.run(['systemctl', '--failed', '--no-pager', '--plain'], 
+                                  capture_output=True, text=True, timeout=5)
+            if result.returncode == 0:
+                lines = result.stdout.strip().split('\n')
+                failed_services = []
+                for line in lines:
+                    if '.service' in line and 'failed' in line:
+                        service_name = line.split()[0]
+                        failed_services.append(service_name)
+                return failed_services[:5]  # Limit to 5 services
+        except:
+            pass
+        return None
+    
+    @staticmethod
+    def get_package_updates() -> Optional[int]:
+        """Get available package updates."""
+        try:
+            # For Ubuntu/Debian
+            if Path('/usr/bin/apt').exists():
+                result = subprocess.run(['apt', 'list', '--upgradable'], 
+                                      capture_output=True, text=True, timeout=10)
+                if result.returncode == 0:
+                    lines = result.stdout.strip().split('\n')
+                    # Filter out the header line
+                    updates = [l for l in lines if '/' in l and 'upgradable' in l]
+                    return len(updates)
+            
+            # For RHEL/CentOS/Fedora
+            elif Path('/usr/bin/dnf').exists():
+                result = subprocess.run(['dnf', 'check-update', '--quiet'], 
+                                      capture_output=True, text=True, timeout=10)
+                if result.returncode == 100:  # dnf returns 100 when updates are available
+                    lines = result.stdout.strip().split('\n')
+                    return len([l for l in lines if l and not l.startswith('Last metadata')])
+        except:
+            pass
+        return None
+    
+    @staticmethod
+    def get_ssl_cert_info() -> List[Tuple[str, str, int]]:
+        """Get SSL certificate expiration info for common services."""
+        cert_info = []
+        common_ports = [443, 8443, 9443]  # Common HTTPS ports
+        
+        try:
+            # Get hostname
+            hostname = socket.gethostname()
+            
+            for port in common_ports:
+                try:
+                    import ssl
+                    context = ssl.create_default_context()
+                    with socket.create_connection((hostname, port), timeout=3) as sock:
+                        with context.wrap_socket(sock, server_hostname=hostname) as ssock:
+                            cert = ssock.getpeercert()
+                            if cert:
+                                expiry_date = datetime.strptime(cert['notAfter'], '%b %d %H:%M:%S %Y %Z')
+                                days_until_expiry = (expiry_date - datetime.now()).days
+                                cert_info.append((f"{hostname}:{port}", expiry_date.strftime('%Y-%m-%d'), days_until_expiry))
+                except:
+                    continue
+        except:
+            pass
+        
+        return cert_info
+
+class MOTDRenderer:
+    """Handles the visual rendering of MOTD information."""
+    
+    def __init__(self):
+        self.console = console
+    
+    def create_banner(self) -> Panel:
+        """Create the main banner."""
+        if not config.show_banner:
+            return None
+            
+        try:
+            import random
+            font = random.choice(config.banner_fonts)
+            fig = pyfiglet.Figlet(font=font)
+            banner_text = fig.renderText(config.banner_text)
+            
+            # Create styled text
+            styled_banner = Text(banner_text, style=config.banner_style)
+            
+            return Panel(
+                Align.center(styled_banner),
+                box=box.DOUBLE_EDGE,
+                style=config.color_accent,
+                title="🖥️  System Banner",
+                title_align="center"
+            )
+        except:
+            # Fallback if figlet fails
+            styled_text = Text(config.banner_text, style=f"bold {config.color_accent}")
+            return Panel(
+                Align.center(styled_text),
+                box=box.ROUNDED,
+                style=config.color_info
+            )
+    
+    def create_system_info_table(self) -> Table:
+        """Create system information table."""
+        table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
+        table.add_column("Property", style=config.color_info, width=config.left_col_length)
+        table.add_column("Value", style="white")
+        
+        # Collect system info
+        uptime = SystemInfo.get_uptime()
+        boot_time = SystemInfo.get_boot_time()
+        system_info = SystemInfo.get_system_info()
+        cpu_info, cpu_usage = SystemInfo.get_cpu_info()
+        memory_info, memory_usage = SystemInfo.get_memory_info()
+        load_avg = SystemInfo.get_load_average()
+        processes = SystemInfo.get_processes_count()
+        users = SystemInfo.get_logged_users()
+        
+        # Determine CPU color
+        try:
+            cpu_percent = float(cpu_usage.replace('%', ''))
+            if cpu_percent > config.cpu_critical_threshold:
+                cpu_color = config.color_critical
+            elif cpu_percent > config.cpu_warn_threshold:
+                cpu_color = config.color_warn
+            else:
+                cpu_color = config.color_ok
+        except:
+            cpu_color = "white"
+        
+        # Determine memory color
+        try:
+            mem_percent = float(memory_usage.split('%')[0])
+            if mem_percent > config.memory_critical_threshold:
+                mem_color = config.color_critical
+            elif mem_percent > config.memory_warn_threshold:
+                mem_color = config.color_warn
+            else:
+                mem_color = config.color_ok
+        except:
+            mem_color = "white"
+        
+        # Add rows
+        table.add_row("🕐 Uptime", uptime)
+        table.add_row("🚀 Boot Time", boot_time)
+        table.add_row("💻 System", system_info)
+        table.add_row("🔧 CPU", cpu_info)
+        table.add_row("📊 CPU Usage", Text(cpu_usage, style=cpu_color))
+        table.add_row("🧠 Memory", memory_info)
+        table.add_row("📈 Memory Usage", Text(memory_usage, style=mem_color))
+        table.add_row("⚖️  Load Average", load_avg)
+        table.add_row("🔄 Processes", processes)
+        table.add_row("👥 Users", users)
+        
+        return table
+    
+    def create_disk_info_table(self) -> Table:
+        """Create disk usage table."""
+        table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
+        table.add_column("Mount Point", style=config.color_info, width=config.left_col_length)
+        table.add_column("Usage", style="white")
+        
+        disk_info = SystemInfo.get_disk_info()
+        
+        for mount_point, usage_str, percent in disk_info:
+            # Determine color based on usage
+            if percent > config.disk_critical_threshold:
+                color = config.color_critical
+            elif percent > config.disk_warn_threshold:
+                color = config.color_warn
+            else:
+                color = config.color_ok
+            
+            # Add emoji for common mount points
+            emoji = "💾"
+            if mount_point == "/":
+                emoji = "🏠"
+            elif "home" in mount_point:
+                emoji = "🏡"
+            elif "var" in mount_point:
+                emoji = "📁"
+            elif "tmp" in mount_point:
+                emoji = "🗑️"
+            
+            table.add_row(f"{emoji} {mount_point}", Text(usage_str, style=color))
+        
+        return table
+    
+    def create_network_info_table(self) -> Table:
+        """Create network information table."""
+        table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
+        table.add_column("Interface", style=config.color_info, width=config.left_col_length)
+        table.add_column("Address", style="white")
+        
+        network_info = SystemInfo.get_network_info()
+        public_ip = SystemInfo.get_public_ip()
+        
+        # Add public IP first
+        table.add_row("🌐 Public IP", public_ip)
+        
+        # Add network interfaces
+        for interface, address in network_info.items():
+            emoji = "🔗"
+            if "wlan" in interface.lower() or "wifi" in interface.lower():
+                emoji = "📡"
+            elif "eth" in interface.lower() or "en" in interface.lower():
+                emoji = "🌐"
+            elif "docker" in interface.lower():
+                emoji = "🐳"
+            
+            table.add_row(f"{emoji} {interface}", address)
+        
+        return table
+    
+    def create_enhanced_features_table(self) -> Optional[Table]:
+        """Create table for enhanced features."""
+        table = Table(box=box.ROUNDED, show_header=False, padding=(0, 1))
+        table.add_column("Feature", style=config.color_info, width=config.left_col_length)
+        table.add_column("Status", style="white")
+        
+        rows_added = 0
+        
+        # Docker info
+        if config.show_docker:
+            docker_info = EnhancedFeatures.get_docker_info()
+            if docker_info:
+                table.add_row("🐳 Docker", docker_info["containers"])
+                rows_added += 1
+        
+        # Package updates
+        updates = EnhancedFeatures.get_package_updates()
+        if updates is not None:
+            color = config.color_warn if updates > 0 else config.color_ok
+            status = f"{updates} available" if updates > 0 else "Up to date"
+            table.add_row("📦 Updates", Text(status, style=color))
+            rows_added += 1
+        
+        # Failed systemd services
+        if config.show_systemd:
+            failed_services = EnhancedFeatures.get_systemd_failed()
+            if failed_services is not None:
+                if failed_services:
+                    color = config.color_critical
+                    status = f"{len(failed_services)} failed: {', '.join(failed_services[:2])}"
+                else:
+                    color = config.color_ok
+                    status = "All services OK"
+                table.add_row("⚙️  Services", Text(status, style=color))
+                rows_added += 1
+        
+        # SSL certificates
+        if config.show_ssl_certs:
+            ssl_certs = EnhancedFeatures.get_ssl_cert_info()
+            for cert_name, expiry_date, days_left in ssl_certs:
+                if days_left < 30:
+                    color = config.color_critical
+                elif days_left < 60:
+                    color = config.color_warn
+                else:
+                    color = config.color_ok
+                
+                table.add_row(f"🔒 SSL {cert_name}", Text(f"Expires in {days_left} days", style=color))
+                rows_added += 1
+        
+        return table if rows_added > 0 else None
+    
+    def create_quote_panel(self) -> Optional[Panel]:
+        """Create an inspirational quote panel."""
+        if not config.show_quote:
+            return None
+            
+        quotes = [
+            "The best way to predict the future is to invent it. - Alan Kay",
+            "Code is like humor. When you have to explain it, it's bad. - Cory House",
+            "Programs must be written for people to read, and only incidentally for machines to execute. - Harold Abelson",
+            "The computer was born to solve problems that did not exist before. - Bill Gates",
+            "Software is a great combination between artistry and engineering. - Bill Gates",
+            "First, solve the problem. Then, write the code. - John Johnson",
+            "Experience is the name everyone gives to their mistakes. - Oscar Wilde",
+            "In order to be irreplaceable, one must always be different. - Coco Chanel",
+            "Java is to JavaScript what car is to Carpet. - Chris Heilmann",
+            "Knowledge is power. - Francis Bacon"
+        ]
+        
+        import random
+        quote = random.choice(quotes)
+        
+        return Panel(
+            Align.center(Text(quote, style="italic cyan")),
+            box=box.ROUNDED,
+            title="💭 Quote of the Day",
+            title_align="center",
+            style="dim"
+        )
+
+def main():
+    """Main function to display the MOTD."""
+    try:
+        renderer = MOTDRenderer()
+        console = Console(width=config.line_length)
+        
+        # Create layout
+        layout = Layout()
+        
+        # Create components
+        components = []
+        
+        # Banner
+        banner = renderer.create_banner()
+        if banner:
+            components.append(banner)
+        
+        # System info table
+        sys_table = renderer.create_system_info_table()
+        sys_panel = Panel(sys_table, title="🖥️  System Information", 
+                         title_align="left", box=box.ROUNDED)
+        components.append(sys_panel)
+        
+        # Disk info table
+        disk_table = renderer.create_disk_info_table()
+        if disk_table.rows:
+            disk_panel = Panel(disk_table, title="💾 Disk Usage", 
+                              title_align="left", box=box.ROUNDED)
+            components.append(disk_panel)
+        
+        # Network info table  
+        net_table = renderer.create_network_info_table()
+        if net_table.rows:
+            net_panel = Panel(net_table, title="🌐 Network Information", 
+                             title_align="left", box=box.ROUNDED)
+            components.append(net_panel)
+        
+        # Enhanced features table
+        enhanced_table = renderer.create_enhanced_features_table()
+        if enhanced_table and enhanced_table.rows:
+            enhanced_panel = Panel(enhanced_table, title="🚀 Enhanced Features", 
+                                  title_align="left", box=box.ROUNDED)
+            components.append(enhanced_panel)
+        
+        # Quote panel
+        quote_panel = renderer.create_quote_panel()
+        if quote_panel:
+            components.append(quote_panel)
+        
+        # Print all components
+        for component in components:
+            console.print(component)
+            console.print()  # Add spacing
+        
+        # Footer
+        footer_text = Text()
+        footer_text.append("Generated on ", style="dim")
+        footer_text.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"), style="bold cyan")
+        footer_text.append(" | ", style="dim")
+        footer_text.append("Modern MOTD v2.0", style="bold magenta")
+        
+        console.print(Align.center(footer_text))
+        console.print()
+        
+    except KeyboardInterrupt:
+        console.print("\n👋 MOTD interrupted by user", style="yellow")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n❌ Error generating MOTD: {e}", style="red")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
