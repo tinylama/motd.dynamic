@@ -190,7 +190,22 @@ fi
 
 # Step 9: Setup system-wide MOTD (no choices)
 print_status "Setting up system-wide MOTD..."
-echo "$MOTD_COMMAND" | sudo tee -a /etc/profile > /dev/null
+
+# Add MOTD command to /etc/profile with proper formatting
+if ! sudo grep -q "motd.dynamic" /etc/profile; then
+    echo "" | sudo tee -a /etc/profile > /dev/null
+    echo "# Modern MOTD - Display system information" | sudo tee -a /etc/profile > /dev/null
+    echo "$MOTD_COMMAND" | sudo tee -a /etc/profile > /dev/null
+    echo "" | sudo tee -a /etc/profile > /dev/null
+fi
+
+# Add MOTD command to user's bashrc with proper formatting
+if ! grep -q "motd.dynamic" ~/.bashrc; then
+    echo "" >> ~/.bashrc
+    echo "# Modern MOTD - Display system information" >> ~/.bashrc
+    echo "$MOTD_COMMAND" >> ~/.bashrc
+    echo "" >> ~/.bashrc
+fi
 
 # Disable default MOTD
 sudo chmod -x /etc/update-motd.d/* 2>/dev/null || true
