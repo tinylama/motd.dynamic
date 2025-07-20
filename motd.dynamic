@@ -471,16 +471,16 @@ class MOTDRenderer:
             mem_color = "white"
         
         # Add rows
-        table.add_row("🕐 Uptime", uptime)
-        table.add_row("🚀 Boot Time", boot_time)
-        table.add_row("💻 System", system_info)
-        table.add_row("🔧 CPU", cpu_info)
+        table.add_row("🕐 Uptime", Text(uptime, style="white"))
+        table.add_row("🚀 Boot Time", Text(boot_time, style="white"))
+        table.add_row("💻 System", Text(system_info, style="white"))
+        table.add_row("🔧 CPU", Text(cpu_info, style="white"))
         table.add_row("📊 CPU Usage", Text(cpu_usage, style=cpu_color))
-        table.add_row("🧠 Memory", memory_info)
+        table.add_row("🧠 Memory", Text(memory_info, style="white"))
         table.add_row("📈 Memory Usage", Text(memory_usage, style=mem_color))
-        table.add_row("⚖️ Load Average", load_avg)
-        table.add_row("🔄 Processes", processes)
-        table.add_row("👥 Users", users)
+        table.add_row("⚖️ Load Average", Text(load_avg, style="white"))
+        table.add_row("🔄 Processes", Text(processes, style="white"))
+        table.add_row("👥 Users", Text(users, style="white"))
         
         return table
     
